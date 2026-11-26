@@ -1,0 +1,38 @@
+
+name: mt-access-guac
+
+services:
+  # Native proxy for RDP. Not exposed to the host.
+  guacd:
+    image: guacamole/guacd:1.6.0
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: ${GUACD_LOG_LEVEL:-info}
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - guac_private
+
+  # Guacamole web application.
+  guacamole:
+    image: guacamole/guacamole:1.6.0
+    restart: unless-stopped
+    depends_on:
+      - guacd
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: "4822"
+      JSON_ENABLED: "true"
+      JSON_SECRET_KEY: ${JSON_SECRET_KEY:?Set JSON_SECRET_KEY in guacamole/.env}
+      LOG_LEVEL: debug
+    ports:
+      - "127.0.0.1:8080:8080"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - guac_private
+
+networks:
+  guac_private:
+    name: mt-access-guac-private
+    driver: bridge
